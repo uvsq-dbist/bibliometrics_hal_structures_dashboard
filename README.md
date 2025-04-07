@@ -1,17 +1,18 @@
 # bibliometrics_hal_structures_dashboard
 <h1>Dashboard de structures Hal</h1>
 <h2>En un mot</h2>
-L'objectif de l'outil est de présenter les sous-structures Hal d'une structure première sous deux formes
+L'objectif de l'outil est de présenter les sous-structures Hal d'une structure première sous deux formes :
 <ul>
   <li>hiérarchique : pour avoir une bonne appréciation de l'arboresence et pour pouvoir facilement avoir accès aux liens de modification</li>
   <li>"plate" : pour faciement pouvoir décharger en format .csv toutes les sous-structures</li>
 </ul>
 <h2>Utilisation</h2>
-L’utilisateur se voit présenter un formulaire qui contient toutes les sous-structures de l'UVSQ. (Mais il peut aussi choisir une autre institution que l'UVSQ, le bouton se trouve un peu plus bas dans la page). Il choisit une sous structure et se voit proposer deux possibilités s'appliquant à la sous-structure choisie et de celles qui sont "en dessous" de cette sous-structure : affichage hiérachique ou affichage plat
-<br/><br/>
-affichage hiérarchique : l'utilisateur peut, visuellement, mettre en avant ou mettre en retrait les structures selon leur type ou leur "validity"
-<br/><br/>
-affichage "plat" : l'utilisateur peut décharger le tableu en format .csv
+L’utilisateur se voit présenter un formulaire qui contient toutes les sous-structures de l'UVSQ. (Mais il peut aussi choisir une autre institution que l'UVSQ, le bouton se trouve un peu plus bas dans la page). Il choisit une sous structure et se voit proposer deux possibilités : affichage hiérachique ou affichage plat. 
+<ul>
+<li>affichage hiérarchique : l'utilisateur peut, visuellement, mettre en avant ou mettre en retrait les structures selon leur type ou leur "validity"
+<li>affichage "plat" : l'utilisateur peut décharger le tableu en format .csv
+  </ul>
+Dans les deux cas l'affichage concerne la sous-structure choisie ET celles qui sont "en dessous" de cette sous-structure
 <h2>Langage</h2>
 HTML, JavaScript
 <br/><br/>
@@ -19,7 +20,7 @@ N'importe quel browser permet d'utiliser le code
 <h2>Fichiers</h2>
 Pour permettre une instalation la plus facile possible tout le code (toutes les fonctions) se trouve dans un seul fichier de code
 <h2>Dépendance</h2>
-L'outil est dépendant de l'API Hal telle qu'elles existent aujourd'hui (avril 2025) avec le point d'entrée [https://entrepot.recherche.data.gouv.fr/api/search](https://api.archives-ouvertes.fr/ref/structure)
+L'outil est dépendant de l'API Hal telle qu'elles existent aujourd'hui (avril 2025) avec le point d'entrée https://entrepot.recherche.data.gouv.fr/api/search
 <h2>Fonctionnement, fonctions</h2>
 <ul>
   <li>Fonctions
@@ -75,7 +76,7 @@ switch_function()
 </li>
 </ul>
 </li>
-  <li>Codes couleurs : les types et les validities sont associés à des couleurs. Elles sont gérées dans le tag /<style/>. Les couleurs des validities sont les couleurs officielles Hal</li>
+  <li>Codes couleurs : les types et les validities sont associés à des couleurs. Elles sont gérées dans le tag &lt;style&gt;. Les couleurs des validities sont les couleurs officielles Hal</li>
 <li>Mise en avant / en retrait : l'affichage hiérarchique permet une mise en avant / en retrait de certains lignes. Celle ci fait intervenir l'opacité et la taille des caratères. Les valeurs sont réunies dans deux variables : 
   <br/>var opacity={"standard":1,"down":0.5};
 <br/>var font_size={"standard":1,"down":0.75};
