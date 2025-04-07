@@ -19,12 +19,47 @@ N'importe quel browser permet d'utiliser le code
 <h2>Fichiers</h2>
 Pour permettre une instalation la plus facile possible tout le code (toutes les fonctions) se trouve dans un seul fichier de code
 <h2>Dépendance</h2>
-L'outil est dépendant des API de Recheche Data Gouv telle qu'elles existent aujourd'hui (mars 2025) avec le point d'entrée https://entrepot.recherche.data.gouv.fr/api/search
+L'outil est dépendant de l'API Hal telle qu'elles existent aujourd'hui (avril 2025) avec le point d'entrée [https://entrepot.recherche.data.gouv.fr/api/search](https://api.archives-ouvertes.fr/ref/structure)
 <h2>Fonctionnement, fonctions</h2>
-La fonction send_function() lance le processus, elle est déclenchée par le bouton du formulaire
-<br/><br/>
-La fonctin get_data_function() va chercher les données, via un fetch
-<br/><br/>
-La fonction can_data_function() stocke les données, dans trois variables : dataset_data_object, dataverse_data_object, data_structure_object
-<br/><br/>
-La fonctin display_data_function() affiche les données
+<ul>
+<li>Fonction de recherche / affichage des structures Hal :
+<ul>
+<li>get_first_hal_affiliation_data_function() <== lancé au chargement de la page 
+ou lancé par le bouton de changement de structure
+<br/>puis : </li>
+<li>
+  get_hal_affiliation_data_function() <= récursive
+<br/>puis, quand arrivé à la fin : </li>
+<li>build_selection_from_element_function()</li>
+  </ul>
+</li>
+<li>Fonctions d'affichage :
+affichage hierarchique : 
+hierarchical_display_function() <== déclenché par bouton
+puis : 
+hierarchical_display_from_element_function()
+puis : 
+display_one_hierarchical_line_function() <== fabrique une ligne
+affichage plat : 
+flat_display_function() <== déclenché par bouton
+puis : 
+flat_display_from_element_function()
+puis :
+display_one_flat_line_function() <== fabrique une ligne
+</li>
+<li>Fonction multi-usage :
+get_element_function()
+(utilisée dans get_hal_affiliation_data_function(), dans hierarchical_display_function(), 
+et dans flat_display_function())
+</li>
+<li>Fonction de mise en avant / mise en retrait des affichages 
+de la visualisation hiérarchique :
+switch_function()
+</li>
+<li>Fonctions de déchargement .csv de la table plate :
+<ul>
+<li>download_main_file_function() <== déclenché par bouton</li>
+<li>table_to_csv_function()</li>
+</ul>
+</li>
+</ul>
