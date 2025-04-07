@@ -22,7 +22,7 @@ Pour permettre une instalation la plus facile possible tout le code (toutes les 
 L'outil est dépendant de l'API Hal telle qu'elles existent aujourd'hui (avril 2025) avec le point d'entrée [https://entrepot.recherche.data.gouv.fr/api/search](https://api.archives-ouvertes.fr/ref/structure)
 <h2>Fonctionnement, fonctions</h2>
 <ul>
-<li>Fonction de recherche / affichage des structures Hal :
+<li>Fonction de recherche / affichage du formulaire :
 <ul>
 <li>get_first_hal_affiliation_data_function() <== lancé au chargement de la page 
 ou lancé par le bouton de changement de structure
@@ -34,18 +34,22 @@ ou lancé par le bouton de changement de structure
   </ul>
 </li>
 <li>Fonctions d'affichage :
-affichage hierarchique : 
+  <ul>
+<li>affichage hierarchique : 
 hierarchical_display_function() <== déclenché par bouton
 puis : 
 hierarchical_display_from_element_function()
 puis : 
 display_one_hierarchical_line_function() <== fabrique une ligne
+  </li>
 affichage plat : 
-flat_display_function() <== déclenché par bouton
+<li>flat_display_function() <== déclenché par bouton
 puis : 
 flat_display_from_element_function()
 puis :
 display_one_flat_line_function() <== fabrique une ligne
+  </li>
+  </ul>
 </li>
 <li>Fonction multi-usage :
 get_element_function()
