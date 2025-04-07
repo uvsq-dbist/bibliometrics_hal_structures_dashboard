@@ -22,6 +22,8 @@ Pour permettre une instalation la plus facile possible tout le code (toutes les 
 L'outil est dépendant de l'API Hal telle qu'elles existent aujourd'hui (avril 2025) avec le point d'entrée [https://entrepot.recherche.data.gouv.fr/api/search](https://api.archives-ouvertes.fr/ref/structure)
 <h2>Fonctionnement, fonctions</h2>
 <ul>
+  <li>Fonctions
+  <ul>
 <li>Fonction de recherche / affichage du formulaire :
 <ul>
 <li>get_first_hal_affiliation_data_function() <== lancé au chargement de la page 
@@ -36,19 +38,24 @@ ou lancé par le bouton de changement de structure
 <li>Fonctions d'affichage :
   <ul>
 <li>affichage hierarchique : 
-hierarchical_display_function() <== déclenché par bouton
-puis : 
-hierarchical_display_from_element_function()
-puis : 
-display_one_hierarchical_line_function() <== fabrique une ligne
+  <ul>
+<li>hierarchical_display_function() <== déclenché par bouton
+<br/>puis : 
+<li>hierarchical_display_from_element_function()
+<br/>puis : 
+<li>display_one_hierarchical_line_function() <== fabrique une ligne
+  </ul>
   </li>
-affichage plat : 
-<li>flat_display_function() <== déclenché par bouton
-puis : 
-flat_display_from_element_function()
-puis :
-display_one_flat_line_function() <== fabrique une ligne
-  </li>
+<li>affichage plat : 
+<ul>
+  <li>flat_display_function() <== déclenché par bouton
+<br/>puis : 
+<li>flat_display_from_element_function()
+<br/>
+  puis :
+<li>display_one_flat_line_function() <== fabrique une ligne
+</ul>
+</li>
   </ul>
 </li>
 <li>Fonction multi-usage :
@@ -67,3 +74,10 @@ switch_function()
 </ul>
 </li>
 </ul>
+</li>
+  <li>Codes couleurs : les types et les validities sont associés à des couleurs. Elles sont gérées dans le tag /<style/>. Les couleurs des validities sont les couleurs officielles Hal</li>
+<li>Mise en avant / en retrait : l'affichage hiérarchique permet une mise en avant / en retrait de certains lignes. Celle ci fait intervenir l'opacité et la taille des caratères. Les valeurs sont réunies dans deux variables : 
+  <br/>var opacity={"standard":1,"down":0.5};
+<br/>var font_size={"standard":1,"down":0.75};
+</li>
+  </ul>
