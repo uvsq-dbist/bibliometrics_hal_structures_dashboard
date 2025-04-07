@@ -1,0 +1,1048 @@
+<html>
+<head>
+<title>
+hal_structures_dashboard
+</title>
+<meta charset="UTF-8">
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<!--
+240
+-->
+<style>
+table 
+{
+	border-collapse: collapse;
+	border: 1px solid black;
+}
+td 
+{
+	border: 1px solid black;
+	padding: 5px;
+	display: table-cell;
+	vertical-align: top; 
+}
+.institution
+{
+	background-color: rgb(220, 226, 218);
+	color: rgb(0, 0, 0);
+}
+.laboratory
+{
+	background-color: rgb(203, 198, 191);
+	color: rgb(0, 0, 0);
+}
+.researchteam
+{
+	background-color: rgb(228, 222, 205);
+	color: rgb(0, 0, 0);
+}
+.regrouplaboratory
+{
+	background-color: rgb(236, 232, 222);
+	color: rgb(0, 0, 0);
+}
+.department
+{
+	background-color: rgb(218, 218, 208);
+	color: rgb(0, 0, 0);
+}
+.VALID
+{
+	appearance:none;
+	color:#7B8C74;
+	background-color: #DFF0D8;
+	color: rgb(0, 0, 0);
+}
+.OLD
+{
+	appearance:none;
+	color : #98947F;
+	background-color: #FCF8ED;
+	color: rgb(0, 0, 0);
+}
+.INCOMING
+{
+	appearance:none;
+	color : #8E7A7A;
+	background-color: #F2DEDE;
+	color: rgb(0, 0, 0);
+}
+
+
+
+
+
+</style>
+<!--
+<script type="text/javascript" src="https://gc.kis.v2.scr.kaspersky-labs.com/F9D5ADC0-1EFE-1947-8B58-B1045B397693/main.js" charset="UTF-8"></script></head>
+-->
+<body>
+<h1 id='main_title'><span id='affiliation_name_spot_01'></span>&nbsp;:&nbsp;Affiliations Hal</h1>
+<!-- cet anchor cachée sert au download (save) du fichier-->
+<a id='hidden_anchor' style='display:none' type='text/xml'></a>
+<div id="hal_dashboard_spot"></div>
+<div id="hal_form_spot"></div>
+<br/>
+<div id='label' style="display: none;">
+Pour l'affiliation choisie...
+</div>
+<br/>
+<input id='submit_button_01' type='submit' onclick='hierarchical_display_function()' style="display: none;" value="afficher l'affiliation et de ses sous-affiliations en hiérarchie"></input>
+<br/>
+<input id='submit_button_02' type='submit' onclick='flat_display_function()' style="display: none;" value="afficher une liste plate de l'affiliation et de ses sous-affiliations"></input>
+<br/>
+<div id='alternative_affiliation_dashboard' style="display: none;">
+Si vous vous intéressez à une autre institution que&nbsp;<i><span id='affiliation_name_spot_02'></span></i>&nbsp;, allez 
+chercher son numéro sur <a href='https://aurehal.archives-ouvertes.fr/structure/index' target='_blanck'>Hal<a>, 
+copiez le ici&nbsp;
+<input id='alternative_affiliation_id' type='text'></input>
+&nbsp;et cliquez sur ce bouton&nbsp;
+<input id='submit_button_03' type='submit' onclick='get_first_hal_affiliation_data_function(0)' style="display:inline;" value="envoi"></input>
+</div>
+<br/>
+<div id="types" style="display:none;"></div>
+<div id="validities" style="display:none;"></div>
+<div id="hal_display_spot_01"></div>
+<div id="test_spot"></div>
+<hr>
+<a href='https://www.uvsq.fr/english' target='_blank'>UVSQ</a>
+/
+<a href='https://www.uvsq.fr/dbist' target='_blank'>DBIST</a>
+
+<script>
+/*
+
+Fonction de recherche / affichage des structures Hal :
+get_first_hal_affiliation_data_function() <== lancé au chargement de la page 
+<== ou lancé par le bouton de changement de structure
+puis : 
+get_hal_affiliation_data_function() <= récursive
+puis, quand arrivé à la fin : 
+build_selection_from_element_function()
+
+Fonctions d'affichage :
+affichage hierarchique : 
+hierarchical_display_function() <== déclenché par bouton
+puis : 
+hierarchical_display_from_element_function()
+puis : 
+display_one_hierarchical_line_function() <== fabrique une ligne
+affichage plat : 
+flat_display_function() <== déclenché par bouton
+puis : 
+flat_display_from_element_function()
+puis :
+display_one_flat_line_function() <== fabrique une ligne
+
+Fonction multi-usage :
+get_element_function()
+(utilisée dans get_hal_affiliation_data_function, dans hierarchical_display_function(), 
+et dans flat_display_function() pour xxx)
+
+Fonction de mise en avant / mise en retrait des affichages 
+de la visualisation hiérarchique :
+switch_function()
+
+Fonctions de déchargement .csv de la table plate :
+download_main_file_function() <== déclenché par bouton
+table_to_csv_function() 
+
+*/
+
+var origin_affiliation_id=0;
+
+origin_affiliation_id=81173;//UVSQ
+
+var starts=0;
+var finishes=0;
+
+var affiliations_tree_step_one=new Object();
+var affiliations_tree_step_two=new Array();
+var affiliations_data=new Object();
+var affiliations_sort=new Array();
+
+var types=new Array();
+var validities=new Array();
+
+var fields=[
+"docid",
+"type_s",
+"valid_s",
+"name_s",
+"acronym_s",
+"isni_s",
+"idref_s",
+"rorUrl_s",
+"ror_s",
+"rnsr_s",
+"url_s",
+"startDate_s",
+"endDate_s"
+];
+
+var fields_bit="";
+for (var i = 0; i < fields.length; i++) 
+{
+	if (i!=0)
+	{
+		fields_bit+=",";
+	}
+	fields_bit+=fields[i];
+}
+
+var prefix="ID_";
+
+var max_level=0;
+
+var button_labels=["mettre en retrait","mettre en avant"];
+
+var layer_id_maker=0;
+
+var layers_score_card_02=new Array();
+var layers_score_card_01=new Object();
+
+var opacity={"standard":1,"down":0.5};
+var font_size={"standard":1,"down":0.75};
+
+var display_string="";
+
+var selection=document.createElement("select");
+selection.id = "affiliations_selection";
+
+get_first_hal_affiliation_data_function(origin_affiliation_id)
+
+function download_main_file_function(data)
+{
+	data = new Blob([table_to_csv_function(data)]); // 
+	var file_name="structures_hal.csv";
+    var hidden_anchor = document.getElementById('hidden_anchor');
+	hidden_anchor.href = URL.createObjectURL(data);
+	document.getElementById('hidden_anchor').download=file_name;
+	document.getElementById('hidden_anchor').click();
+}
+
+function table_to_csv_function(table) 
+{
+	let str="";
+	for (var i = 0, row; row = table.rows[i]; i++) 
+	{
+		for (var j = 0, col; col = row.cells[j]; j++) 
+		{
+			var cell_content=row.cells[j].innerHTML;
+// il peut y avoir des " indésirables	
+			cell_content=cell_content.replaceAll('"',"'");;
+// il peut y avoir des \n, \r ou \t indésirables	
+			cell_content=cell_content.replaceAll("\n","");;
+			cell_content=cell_content.replaceAll("\r","");;
+			cell_content=cell_content.replaceAll("\t","");;
+			str+=cell_content+'\t';
+		}
+		str+='\r\n';
+	}
+	return str;
+}
+
+function hierarchical_display_function()
+{
+	document.getElementById("hal_display_spot_01").innerHTML="";	
+	layer_id_maker=0;
+	layers_score_card_02=new Array();
+	layers_score_card_01=new Object();
+	display_string="";
+	affiliations_tree_step_two=new Array();
+	get_element_function(prefix+document.getElementById("affiliations_selection").value,affiliations_tree_step_one);
+	hierarchical_display_from_element_function(affiliations_tree_step_two,0);
+	document.getElementById("hal_display_spot_01").innerHTML=display_string;	
+	var provisional_display="";
+	provisional_display+="types :&nbsp;";
+	for (var i = 0; i < types.length; i++) 
+	{
+		provisional_display+="<span class='";
+		provisional_display+=types[i];
+		provisional_display+="' ";
+		provisional_display+="id='main_label_";
+		provisional_display+=types[i];
+		provisional_display+="' ";
+		provisional_display+="style='opacity:";
+		provisional_display+=opacity["standard"];
+		provisional_display+=";font-size:";
+		provisional_display+=font_size["standard"];;
+		provisional_display+="em";
+		provisional_display+="'";
+		provisional_display+=">";
+		provisional_display+=types[i];
+		provisional_display+="</span>";
+		provisional_display+="&nbsp;";
+		provisional_display+="<input id='button_";
+		provisional_display+=types[i];
+		provisional_display+="' ";
+		provisional_display+="type='button' value='";
+		provisional_display+=button_labels[0];
+		provisional_display+="' onclick=switch_function('";
+		provisional_display+=types[i];
+		provisional_display+="')>";
+		provisional_display+="</input>";
+		provisional_display+="&nbsp;";
+		layers_score_card_01[types[i]]=0;
+	}
+	provisional_display+="<br/><br/>";
+	document.getElementById("types").innerHTML=provisional_display;	
+	document.getElementById("types").style.display="block";
+
+	provisional_display="";
+	provisional_display+="validities :&nbsp;";
+	for (var i = 0; i < validities.length; i++) 
+	{
+
+		provisional_display+="<span class='";
+		provisional_display+=validities[i];
+		provisional_display+="' ";
+		provisional_display+="id='main_label_";
+		provisional_display+=validities[i];
+		provisional_display+="' ";
+		provisional_display+="style='opacity:";
+		provisional_display+=opacity["standard"];
+		provisional_display+=";font-size:";
+		provisional_display+=font_size["standard"];
+		provisional_display+="em";
+		provisional_display+="'";
+		provisional_display+=">";
+		provisional_display+=validities[i];
+		provisional_display+="</span>";
+
+
+
+
+		provisional_display+="&nbsp;";
+		provisional_display+="<input id='button_";
+		provisional_display+=validities[i];
+		provisional_display+="' ";
+		provisional_display+="type='button' value='";
+		provisional_display+=button_labels[0];
+		provisional_display+="' onclick=switch_function('";
+		provisional_display+=validities[i];
+		provisional_display+="')>";
+		provisional_display+="</input>";
+		provisional_display+="&nbsp;";
+		layers_score_card_01[validities[i]]=0;
+	}
+	provisional_display+="<br/><br/>";
+	document.getElementById("validities").innerHTML=provisional_display;	
+	document.getElementById("validities").style.display="block";
+// purge
+	types=new Array();
+	validities=new Array();
+}
+
+function switch_function(one_label)
+{
+	var provisional_id="button_"+one_label;
+	var provisional_label_level=0;
+	if (button_labels.indexOf(document.getElementById(provisional_id).value)==provisional_label_level)
+	{
+		provisional_label_level=1;
+	}
+	document.getElementById(provisional_id).value=button_labels[provisional_label_level];
+	for (let i = 0; i < document.getElementsByClassName(one_label).length; i++) 
+	{
+		if (provisional_label_level==0)
+		{
+			layers_score_card_01[one_label]=0;
+		}
+		if (provisional_label_level==1)
+		{
+			layers_score_card_01[one_label]=1;
+		}
+	}
+	for (let i = 0; i < layers_score_card_02.length; i++) 
+	{
+		document.getElementById(i).style.opacity=opacity["standard"];	
+		document.getElementById(i).style.fontSize = font_size["standard"]+"em";
+		var provisional_sum=0;
+		for (let j = 0; j < layers_score_card_02[i].length; j++) 
+		{
+			provisional_sum=provisional_sum+layers_score_card_01[layers_score_card_02[i][j]];
+		}
+		if (provisional_sum>0)
+		{
+			document.getElementById(i).style.opacity=opacity["down"];	
+			document.getElementById(i).style.fontSize = font_size["down"]+"em";
+		}
+	}
+// pour les boutons d'action eux-mêmes :
+	if (document.getElementById("main_label_"+one_label).style.opacity==opacity["standard"])
+	{
+		document.getElementById("main_label_"+one_label).style.opacity=opacity["down"];
+		document.getElementById("main_label_"+one_label).style.fontSize = font_size["down"]+"em";
+	}
+	else
+	{
+		document.getElementById("main_label_"+one_label).style.opacity=opacity["standard"];
+		document.getElementById("main_label_"+one_label).style.fontSize = font_size["standard"]+"em";
+	}
+}
+
+function flat_display_function()
+{
+	document.getElementById("types").innerHTML="";	
+	document.getElementById("types").style.display="none";
+	document.getElementById("validities").innerHTML="";	
+	document.getElementById("validities").style.display="none";
+	document.getElementById("hal_display_spot_01").innerHTML="";	
+	display_string="";
+	affiliations_tree_step_two=new Array();
+	get_element_function(prefix+document.getElementById("affiliations_selection").value,affiliations_tree_step_one);
+
+	var provisional_input=document.createElement("input");
+	provisional_input.setAttribute("id", "download_button");
+	provisional_input.setAttribute("type", "button");
+	provisional_input.setAttribute("value", "sauvegarder le tableau en csv");
+	display_string+="<table id='main_table'>";
+	flat_display_from_element_function(affiliations_tree_step_two);
+	display_string+="</table>";
+	document.getElementById("hal_display_spot_01").appendChild(provisional_input);
+	var provisional_br=document.createElement("br");
+	document.getElementById("hal_display_spot_01").appendChild(provisional_br);
+	var provisional_br=document.createElement("br");
+	document.getElementById("hal_display_spot_01").appendChild(provisional_br);
+	document.getElementById("hal_display_spot_01").innerHTML+=display_string;	
+	document.getElementById("download_button").addEventListener("click", function() {
+  download_main_file_function(document.getElementById('main_table'));
+	});
+
+}
+
+async function get_first_hal_affiliation_data_function(one_hal_affiliation_id)
+{
+	document.getElementById("types").innerHTML="";	
+	document.getElementById("types").style.display="none";
+	document.getElementById("validities").innerHTML="";	
+	document.getElementById("validities").style.display="none";
+	document.getElementById("hal_display_spot_01").innerHTML="";	
+// au cas où la fonction serait lancée par le bouton id='submit_button_03'...
+	if (one_hal_affiliation_id==0)
+	{
+		origin_affiliation_id=document.getElementById("alternative_affiliation_id").value;
+		one_hal_affiliation_id=origin_affiliation_id;
+// ... tout remettre à plat...
+		document.getElementById("hal_form_spot").innerHTML="";
+		document.getElementById("hal_display_spot_01").innerHTML="";
+		document.getElementById("main_title").style.display="none";
+		document.getElementById("label").style.display="none";
+		selection=document.createElement("select");
+		selection.id = "affiliations_selection";
+		affiliations_tree_step_one=new Object();
+		affiliations_tree_step_two=new Array();
+		affiliations_data=new Object();
+		affiliations_sort=new Array();
+		document.getElementById("submit_button_01").style.display="none";
+		document.getElementById("submit_button_02").style.display="none";
+		document.getElementById("alternative_affiliation_dashboard").style.display="none";
+	}
+// va chercher les données de l'affiliation d'origine
+	let response;
+	try 
+	{
+		response = await fetch("https://api.archives-ouvertes.fr/ref/structure?q=docid:"+one_hal_affiliation_id+"&rows=1&wt=json&fl="+fields_bit);
+	} 
+	catch  
+	{
+		alert("Problème sur l'API Hal. Erreur #"+response.status);
+		location.reload();
+	}
+// Uses the 'optional chaining' operator
+	if (response?.ok) 
+	{
+		let response_as_text;
+		try 
+		{
+			response_as_text = await response.text();
+		}
+		catch  
+		{
+			alert("Problème sur l'API Hal");
+			location.reload();
+		}
+		if (response_as_text!="") 
+		{
+			if (response_as_text.substring(0, 10)!="cURL error") 
+			{
+				response_as_object = JSON.parse(response_as_text);
+				if (response_as_object["response"]["numFound"]!=0)
+				{
+					if (response_as_object["response"]["docs"]!=undefined) 
+					{
+						affiliations_data[origin_affiliation_id]=new Object();
+						for (var i = 0; i < fields.length; i++) 
+						{
+							affiliations_data[origin_affiliation_id][fields[i]]=response_as_object["response"]["docs"][0][fields[i]];
+						}
+
+						document.getElementById("affiliation_name_spot_01").innerHTML=response_as_object["response"]["docs"][0]["name_s"];	
+						document.getElementById("affiliation_name_spot_02").innerHTML=response_as_object["response"]["docs"][0]["name_s"];	
+					}
+					get_hal_affiliation_data_function(origin_affiliation_id,0);
+				}
+				else
+				{
+					alert("Numéro Hal invalide");
+					location.reload();
+				}
+			}
+		}
+	}
+}
+
+
+async function get_hal_affiliation_data_function(one_hal_affiliation_id,level)
+{
+// la fonction prend un numéro de structure Hal et un niveau
+// elle va chercher les numéros de structures Hal juste "en dessous" de la structure qui nous intéresse
+// (ils se trouvent dans response/docs)
+// ces numéros, on les classe par ordre alphabétique de noms correspondant
+// puis on les stocke dans une variable affiliations_tree_step_one[level]
+// puis pour chaque numéro, on relance la fonction, avec comme attribut le numéro et le level, plus un
+
+// décompte le fait que la fonction est lancée
+	starts++;
+// mise à jour de max_level
+	if (level>max_level)
+	{
+		max_level=level;
+	}
+
+	let response;
+	try 
+	{
+		response = await fetch("https://api.archives-ouvertes.fr/ref/structure?q=parentDocid_i:"+one_hal_affiliation_id+"&rows=10000&wt=json&fl="+fields_bit);
+	} 
+	catch  
+	{
+		alert("Problème sur l'API Hal. Erreur #"+response.status);
+		location.reload();
+	}
+// Uses the 'optional chaining' operator
+	if (response?.ok) 
+	{
+		let response_as_text;
+		try 
+		{
+			response_as_text = await response.text();
+		}
+		catch  
+		{
+			alert("Problème sur l'API Hal");
+			location.reload();
+		}
+		if (response_as_text!="") 
+		{
+			if (response_as_text.substring(0, 10)!="cURL error") 
+			{
+				response_as_object = JSON.parse(response_as_text);
+				if (response_as_object["response"]["numFound"]!=0)
+				{
+					if (response_as_object["response"]["docs"]!=undefined) 
+					{
+						if (response_as_object["response"]["docs"].length!=0) 
+						{
+							if (affiliations_tree_step_one[level]==undefined)
+							{
+								affiliations_tree_step_one[level]=new Object();
+							}
+							if (affiliations_tree_step_one[level][prefix+one_hal_affiliation_id]==undefined)
+							{
+								affiliations_tree_step_one[level][prefix+one_hal_affiliation_id]=new Array();
+							}
+							for (var i = 0; i < response_as_object["response"]["docs"].length; i++) 
+							{
+								if (affiliations_data[response_as_object["response"]["docs"][i]["docid"]]==undefined)
+								{
+									affiliations_data[response_as_object["response"]["docs"][i]["docid"]]=new Object();
+									for (var j = 0; j < fields.length; j++) 
+									{
+										affiliations_data[response_as_object["response"]["docs"][i]["docid"]][fields[j]]=response_as_object["response"]["docs"][i][fields[j]];
+									}
+
+									affiliations_sort.push({"docid":response_as_object["response"]["docs"][i]["docid"],"name_s":response_as_object["response"]["docs"][i]["name_s"]});
+								}
+							}
+// sort par nom
+							affiliations_sort.sort((a,b) => (a.name_s > b.name_s) ? 1 : ((b.name_s > a.name_s) ? -1 : 0));
+							for (var i = 0; i < affiliations_sort.length; i++) 
+							{
+								affiliations_tree_step_one[level][prefix+one_hal_affiliation_id].push(prefix+affiliations_sort[i]["docid"]);
+								get_hal_affiliation_data_function(affiliations_sort[i]["docid"],level+1);
+							}
+//purge
+							affiliations_sort=new Array();
+						}
+					}
+				}
+				else
+				{
+				}
+				
+			}
+// décompte le fait que la fonction est terminée (après les await). Cas du succèes (try OK)
+			finishes++;
+// on est arrivé à la fin = il n'y a plus de get_hal_affiliation_data_function() à faire appliquer...
+			if (starts==finishes)
+			{
+// alors on passe en revue affiliations_tree_step_one en commençant par le level le plus grand
+// on attrape ce qu'on trouve à chaque level et on le copie au niveau inférieur
+/* exemple, on a ceci, ou le level de niveau inférieur est 1
+
+0	
+	1005010	
+		0	541821
+		1	408246
+1	
+	541821	
+		0	541828
+		1	541829
+		2	541826
+		3	541827
+		4	541822
+		5	541830
+		6	541825
+		7	541823
+
+on passe à ça
+
+0
+	1005010	
+		0	541821	
+			0	541828
+			1	541829
+			2	541826
+			3	541827
+			4	541822
+			5	541830
+			6	541825
+			7	541823
+		1	408246
+
+*/
+
+				while (level>0)
+				{
+					if (affiliations_tree_step_one[level]!=undefined)
+					{
+						for (const [key_01, value_01] of Object.entries(affiliations_tree_step_one[level])) 
+						{
+							for (const [key_02, value_02] of Object.entries(affiliations_tree_step_one[level-1])) 
+							{
+								for (let i = 0; i < value_02.length; i++) 
+								{
+									if (value_02[i]==key_01)
+									{
+										affiliations_tree_step_one[level-1][key_02][i]={[key_01]:affiliations_tree_step_one[level][key_01]};
+									}
+								}
+							}
+						}
+					}
+					level--;
+				}
+// l'opération terminée, toute la hiérarchie est regroupée dans le level=0 de affiliations_tree_step_one
+// du coup on ne s'intéresse plus qu'à ce niveau là
+				affiliations_tree_step_one=affiliations_tree_step_one[0];
+
+				var sub_affiliation_id=0;
+				sub_affiliation_id=origin_affiliation_id;
+				get_element_function(prefix+sub_affiliation_id,affiliations_tree_step_one);
+				document.getElementById("hal_display_spot_01").innerHTML="";
+				
+				build_selection_from_element_function(affiliations_tree_step_two,0);
+				document.getElementById("hal_form_spot").innerHTML=selection.outerHTML;
+				document.getElementById("main_title").style.display="block";
+				document.getElementById("label").style.display="block";
+				document.getElementById("submit_button_01").style.display="block";
+				document.getElementById("submit_button_02").style.display="block";
+				document.getElementById("alternative_affiliation_dashboard").style.display="block";
+
+// purge
+				starts=0;
+				finishes=0;
+				affiliations_tree_step_two=new Array();
+				display_string="";
+			}
+		}
+	}
+}
+
+
+function flat_display_from_element_function(one_element)
+{
+// fabrique un affichage (display_string) des numéros d'affiliations en liste
+	if(one_element.constructor.name=="Array")
+	{
+		for (var i = 0; i < one_element.length; i++) 
+		{
+			flat_display_from_element_function(one_element[i])
+		}
+	}
+	if(one_element.constructor.name=="Object")
+	{
+		for (const [key, value] of Object.entries(one_element)) 
+		{
+			display_one_flat_line_function(key.substring(prefix.length));
+			flat_display_from_element_function(value)
+		}
+	}
+	if(one_element.constructor.name=="String")
+	{
+		display_one_flat_line_function(one_element.substring(prefix.length));
+	}
+}
+
+function display_one_flat_line_function(one_item)
+{
+	display_string+="<tr>";
+	display_string+="<td title='identifiant hal'>";
+	display_string+=affiliations_data[one_item]["docid"];
+	display_string+="</td>";
+	display_string+="<td title='nom'>";
+	display_string+=affiliations_data[one_item]["name_s"];
+	display_string+="</td>";
+	display_string+="<td title='acronyme'>";
+	if (affiliations_data[one_item]["acronym_s"]!=undefined)
+	{
+		display_string+=affiliations_data[one_item]["acronym_s"];
+	}
+	display_string+="</td>";
+	display_string+="<td title='type'>";
+	display_string+=affiliations_data[one_item]["type_s"];
+	display_string+="</td>";
+	display_string+="<td title='validité'>";
+	display_string+=affiliations_data[one_item]["valid_s"];
+	display_string+="</td>";
+	display_string+="<td title='date de départ'>";
+	if (affiliations_data[one_item]["startDate_s"]!=undefined)
+	{
+		display_string+=affiliations_data[one_item]["startDate_s"];
+	}
+	display_string+="</td>";
+	display_string+="<td title='date de fin'>";
+	if (affiliations_data[one_item]["endDate_s"]!=undefined)
+	{
+		display_string+=affiliations_data[one_item]["endDate_s"];
+	}
+	display_string+="</td>";
+	display_string+="<td title='IdRef'>";
+	if (affiliations_data[one_item]["idref_s"]!=undefined)
+	{
+		display_string+=affiliations_data[one_item]["idref_s"];
+	}
+	display_string+="</td>";
+	display_string+="<td title='ISNI'>";
+	if (affiliations_data[one_item]["isni_s"]!=undefined)
+	{
+		display_string+=affiliations_data[one_item]["isni_s"];
+	}
+	display_string+="</td>";
+	display_string+="<td title='ROR'>";
+	if (affiliations_data[one_item]["ror_s"]!=undefined)
+	{
+		display_string+=affiliations_data[one_item]["ror_s"];
+	}
+	display_string+="</td>";
+	display_string+="<td title='RNSR'>";
+	if (affiliations_data[one_item]["rnsr_s"]!=undefined)
+	{
+		display_string+=affiliations_data[one_item]["rnsr_s"];
+	}
+	display_string+="</td>";
+	display_string+="</tr>";
+}
+
+function build_selection_from_element_function(one_element,level)
+{
+	if(one_element.constructor.name=="Array")
+	{
+		for (var i = 0; i < one_element.length; i++) 
+		{
+			build_selection_from_element_function(one_element[i],level)
+		}
+	}
+	if(one_element.constructor.name=="Object")
+	{
+		level++;
+		for (const [key, value] of Object.entries(one_element)) 
+		{
+			var provisional_text="";
+			var i=1;
+			while(i<level)
+			{
+				provisional_text+="\xA0\xA0\xA0";
+				i++;
+			}
+			provisional_text+=affiliations_data[key.substring(prefix.length)]["name_s"];
+			if (affiliations_data[key.substring(prefix.length)]["acronym_s"]!="" && affiliations_data[key.substring(prefix.length)]["acronym_s"]!=undefined)
+			{
+				provisional_text+=" ("+affiliations_data[key.substring(prefix.length)]["acronym_s"]+")";
+			}
+			provisional_text+=" [";
+			provisional_text+=affiliations_data[key.substring(prefix.length)]["type_s"];
+			provisional_text+="]";
+			if (affiliations_data[key.substring(prefix.length)]["startDate_s"]!=undefined || affiliations_data[key.substring(prefix.length)]["endDate_s"]!=undefined)
+			{
+				provisional_text+=" (";
+				if (affiliations_data[key.substring(prefix.length)]["startDate_s"]!=undefined)
+				{
+					provisional_text+=affiliations_data[key.substring(prefix.length)]["startDate_s"].toString().substring(0,4);
+				}
+				provisional_text+="-";
+				if (affiliations_data[key.substring(prefix.length)]["endDate_s"]!=undefined)
+				{
+					provisional_text+=affiliations_data[key.substring(prefix.length)]["endDate_s"].toString().substring(0,4);
+				}
+				provisional_text+=")";
+			}
+
+
+			var option = document.createElement("option");
+			var provisional_bgcolor="";
+			for (var i = 0; i < document.styleSheets[0].cssRules.length; i++) 
+			{
+				if (document.styleSheets[0].cssRules[i].selectorText=="."+affiliations_data[key.substring(prefix.length)]["valid_s"])
+				{
+					provisional_bgcolor=document.styleSheets[0].cssRules[i].style.getPropertyValue("background-color");
+				}
+			}
+			option.style.backgroundColor = provisional_bgcolor;
+			option.text = provisional_text;
+			option.value = key.substring(prefix.length);
+			selection.appendChild(option);
+			build_selection_from_element_function(value,level)
+		}
+	}
+	if(one_element.constructor.name=="String")
+	{
+		level++;
+		var provisional_text="";
+		var i=1;
+		while(i<level)
+		{
+			provisional_text+="\xA0\xA0\xA0";
+			i++;
+		}
+		provisional_text+=affiliations_data[one_element.substring(prefix.length)]["name_s"];
+		if (affiliations_data[one_element.substring(prefix.length)]["acronym_s"]!="" && affiliations_data[one_element.substring(prefix.length)]["acronym_s"]!=undefined)
+		{
+			provisional_text+=" ("+affiliations_data[one_element.substring(prefix.length)]["acronym_s"]+")";
+		}
+		provisional_text+=" [";
+		provisional_text+=affiliations_data[one_element.substring(prefix.length)]["type_s"];
+		provisional_text+="]";
+		var option = document.createElement("option");
+		var provisional_bgcolor="";
+		for (var i = 0; i < document.styleSheets[0].cssRules.length; i++) 
+		{
+			if (document.styleSheets[0].cssRules[i].selectorText=="."+affiliations_data[one_element.substring(prefix.length)]["valid_s"])
+			{
+				provisional_bgcolor=document.styleSheets[0].cssRules[i].style.getPropertyValue("background-color");
+			}
+		}
+		option.style.backgroundColor = provisional_bgcolor;
+		option.text = provisional_text;
+		option.value = one_element.substring(prefix.length);
+		selection.appendChild(option);
+	}
+}
+
+
+function hierarchical_display_from_element_function(one_element,level)
+{
+// fabrique un affichage (display_string) des affiliation en table des matières
+	if(one_element.constructor.name=="Array")
+	{
+		for (var i = 0; i < one_element.length; i++) 
+		{
+			hierarchical_display_from_element_function(one_element[i],level)
+		}
+	}
+	if(one_element.constructor.name=="Object")
+	{
+		level++;
+		for (const [key, value] of Object.entries(one_element)) 
+		{
+			var i=1;
+			while(i<level)
+			{
+				display_string+="&nbsp;&nbsp;&nbsp;";
+				display_string+="&nbsp;&nbsp;&nbsp;";
+				i++;
+			}
+
+			display_string+="<span id='";
+			display_string+=layer_id_maker;
+			display_string+="'>";
+			layer_id_maker++;
+			display_one_hierarchical_line_function(key);
+			layers_score_card_02.push([affiliations_data[key.substring(prefix.length)]["type_s"],affiliations_data[key.substring(prefix.length)]["valid_s"]]);
+			if (types.indexOf(affiliations_data[key.substring(prefix.length)]["type_s"])==-1)
+			{
+				types.push(affiliations_data[key.substring(prefix.length)]["type_s"]);
+			}
+			if (validities.indexOf(affiliations_data[key.substring(prefix.length)]["valid_s"])==-1)
+			{
+				validities.push(affiliations_data[key.substring(prefix.length)]["valid_s"]);
+			}
+			hierarchical_display_from_element_function(value,level)
+		}
+	}
+	if(one_element.constructor.name=="String")
+	{
+		level++;
+		var i=1;
+		while(i<level)
+		{
+			display_string+="&nbsp;&nbsp;&nbsp;";
+			display_string+="&nbsp;&nbsp;&nbsp;";
+			i++;
+		}
+		display_string+="<span id='";
+		display_string+=layer_id_maker;
+		display_string+="'>";
+		layer_id_maker++;
+		display_one_hierarchical_line_function(one_element);
+		layers_score_card_02.push([affiliations_data[one_element.substring(prefix.length)]["type_s"],affiliations_data[one_element.substring(prefix.length)]["valid_s"]]);
+		if (types.indexOf(affiliations_data[one_element.substring(prefix.length)]["type_s"])==-1)
+		{
+			types.push(affiliations_data[one_element.substring(prefix.length)]["type_s"]);
+		}
+		if (validities.indexOf(affiliations_data[one_element.substring(prefix.length)]["valid_s"])==-1)
+		{
+			validities.push(affiliations_data[one_element.substring(prefix.length)]["valid_s"]);
+		}
+	}
+}
+
+function display_one_hierarchical_line_function(spot)
+{			
+	display_string+="<span class='";
+	display_string+=affiliations_data[spot.substring(prefix.length)]["type_s"];
+	display_string+="'>";
+	display_string+="<span class='";
+	display_string+=affiliations_data[spot.substring(prefix.length)]["valid_s"];
+	display_string+="'>";
+	display_string+=affiliations_data[spot.substring(prefix.length)]["name_s"];
+	if (affiliations_data[spot.substring(prefix.length)]["acronym_s"]!="" && affiliations_data[spot.substring(prefix.length)]["acronym_s"]!=undefined)
+	{
+		display_string+=" ("+"<b>"+affiliations_data[spot.substring(prefix.length)]["acronym_s"]+"</b>"+")";
+	}
+	display_string+=" [";
+	display_string+="<a href='https://aurehal.archives-ouvertes.fr/structure/read/id/";
+	display_string+=spot.substring(prefix.length);
+	display_string+="' target='_blanck'>";
+	display_string+=spot.substring(prefix.length);
+	display_string+="</a>";
+	display_string+="]";
+	display_string+="</span>";
+	display_string+="[";
+	display_string+=affiliations_data[spot.substring(prefix.length)]["type_s"];
+	display_string+="]";
+	if (affiliations_data[spot.substring(prefix.length)]["startDate_s"]!=undefined || affiliations_data[spot.substring(prefix.length)]["endDate_s"]!=undefined)
+	{
+		display_string+="&nbsp;(";
+		if (affiliations_data[spot.substring(prefix.length)]["startDate_s"]!=undefined)
+		{
+			display_string+=affiliations_data[spot.substring(prefix.length)]["startDate_s"];
+		}
+		display_string+="/";
+		if (affiliations_data[spot.substring(prefix.length)]["endDate_s"]!=undefined)
+		{
+			display_string+=affiliations_data[spot.substring(prefix.length)]["endDate_s"];
+		}
+		display_string+=")";
+	}
+	if (affiliations_data[spot.substring(prefix.length)]["idref_s"]!=undefined)
+	{
+		display_string+="&nbsp;";
+		display_string+="<a href='https://www.idref.fr/";
+		display_string+=affiliations_data[spot.substring(prefix.length)]["idref_s"];
+		display_string+="' target='_blanck'>";
+		display_string+="IdRef";
+		display_string+="</a>";
+	}
+	if (affiliations_data[spot.substring(prefix.length)]["isni_s"]!=undefined)
+	{
+		display_string+="&nbsp;";
+		display_string+="<a href='https://isni.org/isni/";
+		display_string+=affiliations_data[spot.substring(prefix.length)]["isni_s"].toString().replaceAll(" ", "");
+		display_string+="' target='_blanck'>";
+		display_string+="ISNI";
+		display_string+="</a>";
+	}
+	if (affiliations_data[spot.substring(prefix.length)]["ror_s"]!=undefined)
+	{
+		display_string+="&nbsp;";
+		display_string+="<a href='";
+		display_string+=affiliations_data[spot.substring(prefix.length)]["ror_s"];
+		display_string+="' target='_blanck'>";
+		display_string+="ROR";
+		display_string+="</a>";
+	}
+	if (affiliations_data[spot.substring(prefix.length)]["rnsr_s"]!=undefined)
+	{
+		display_string+="&nbsp;";
+		display_string+="<a href='https://rnsr.adc.education.fr/structure/";
+		display_string+=affiliations_data[spot.substring(prefix.length)]["rnsr_s"];
+		display_string+="' target='_blanck'>";
+		display_string+="RNSR";
+		display_string+="</a>";
+	}
+	if (affiliations_data[spot.substring(prefix.length)]["url_s"]!=undefined)
+	{
+		display_string+="&nbsp;";
+		display_string+="<a href='";
+		display_string+=affiliations_data[spot.substring(prefix.length)]["url_s"];
+		display_string+="' target='_blanck'>";
+		display_string+="site";
+		display_string+="</a>";
+	}
+	display_string+="</span>";
+	display_string+="</span>";
+	display_string+="<br/>";
+}
+
+function get_element_function(one_hal_affiliation_id,one_element)
+{
+// va chercher les informations de descendance d'une affiliation précise (one_hal_affiliation_id)
+// = va chercher un sous-élément de l'élément de depart
+// placé dans affiliations_tree_step_two
+	if(one_element.constructor.name=="Array")
+	{
+		for (var i = 0; i < one_element.length; i++) 
+		{
+			get_element_function(one_hal_affiliation_id,one_element[i])
+		}
+	}
+	if(one_element.constructor.name=="Object")
+	{
+		for (const [key, value] of Object.entries(one_element)) 
+		{
+			if (key==one_hal_affiliation_id)
+			{
+				affiliations_tree_step_two.push({[key]:value});
+				break;
+			}
+			else
+			{
+				get_element_function(one_hal_affiliation_id,value)
+			}
+		}
+	}
+	if(one_element.constructor.name=="String")
+	{
+		if (one_element==one_hal_affiliation_id)
+		{
+			affiliations_tree_step_two.push(one_element);
+		}
+	}
+}
+</script>
+
+</body>
+</html>
